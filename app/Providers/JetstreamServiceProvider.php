@@ -2,9 +2,17 @@
 
 namespace App\Providers;
 
+use Illuminate\Http\Request;
+use Laravel\Fortify\Fortify;
+use Laravel\Fortify\Features;
+use Laravel\Jetstream\Jetstream;
 use App\Actions\Jetstream\DeleteUser;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Jetstream\Jetstream;
+use Laravel\Fortify\Actions\CanonicalizeUsername;
+use Laravel\Fortify\Actions\AttemptToAuthenticate;
+use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
+use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
+use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 
 class JetstreamServiceProvider extends ServiceProvider
 {
@@ -24,6 +32,16 @@ class JetstreamServiceProvider extends ServiceProvider
         $this->configurePermissions();
 
         Jetstream::deleteUsersUsing(DeleteUser::class);
+
+        Fortify::authenticateThrough(function (Request $request) {
+            return array_filter([
+                    config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
+                    config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
+                    Features::enabled(Features::twoFactorAuthentication()) ? RedirectIfTwoFactorAuthenticatable::class : null,
+                    AttemptToAuthenticate::class,
+                    PrepareAuthenticatedSession::class,
+            ]);
+        });
     }
 
     /**
