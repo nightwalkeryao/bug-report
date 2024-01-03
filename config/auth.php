@@ -62,7 +62,7 @@ return [
     'providers' => [
         'my_custom_user_provider' => [
             'driver' => 'eloquent',
-            'model' => App\Models\User::class,
+            'model' => App\Models\CustomUserModel::class,
         ],
 
         // 'users' => [
